@@ -1,3 +1,5 @@
+
+
 /*
  * Acceleration and Pressure Detection
  *
@@ -6,6 +8,8 @@
  */
 #include <SPI.h>
 #include <Wire.h>
+#include <Adafruit_LIS3DH.h>
+#include <Adafruit_Sensor.h>
 #include <SD.h>
 
 const int chipSelect = 10;
@@ -15,7 +19,10 @@ float sine_angle_z;
 float angle_z_degrees;
 float pressure;
 
-
+#define LIS3DH_CLK 13
+#define LIS3DH_MISO 12
+#define LIS3DH_MOSI 11
+#define LIS3DH_CS 10
 
 #define ACC (0xA7>>1)
 #define A_TO_READ (6)
@@ -91,37 +98,48 @@ void setup()
     return;
   }
   Serial.println("Card Initialized.");
+  #ifndef ESP8266
+  while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
+#endif
+
+  Serial.begin(9600);
+  Serial.println("LIS3DH test!");
+  
+  if (! lis.begin(0x18)) {   // change this to 0x19 for alternative i2c address
+    Serial.println("Couldnt start");
+    while (1);
+  }
+  Serial.println("LIS3DH found!");
+  
+  lis.setRange(LIS3DH_RANGE_4_G);   // 2, 4, 8 or 16 G!
+  
+  Serial.print("Range = "); Serial.print(2 << lis.getRange());  
+  Serial.println("G");
+}
+
 
 }
 void getacceleration()
-{int x,y,z;// put your main code here, to run repeatedly:
-  int acc[3];
+{
+ lis.read();      // get X Y and Z data at once
+  // Then print out the raw data
+  Serial.print("X:  "); Serial.print(lis.x); 
+  Serial.print("  \tY:  "); Serial.print(lis.y); 
+  Serial.print("  \tZ:  "); Serial.print(lis.z); 
 
-  getAccelerometerData(acc);
-  z = acc[2];
+  /* Or....get a new sensor event, normalized */ 
+  sensors_event_t event; 
+  lis.getEvent(&event);
+  
+  /* Display the results (acceleration is measured in m/s^2) */
+  Serial.print("\t\tX: "); Serial.print(event.acceleration.x);
+  Serial.print(" \tY: "); Serial.print(event.acceleration.y); 
+  Serial.print(" \tZ: "); Serial.print(event.acceleration.z); 
+  Serial.println(" m/s^2 ");
 
-  Serial.print("sine_angle_z = ");
-  Serial.print(sine_angle_z);
-  Serial.print("  ");
-  sine_angle_z =((z+10.00)/240.00);
-
-  Serial.print (" sine_angle_z =");
-  Serial.print (sine_angle_z);
-  Serial.print ("   ");
-
-  if (sine_angle_z >1) {
-    sine_angle_z = -1;
-
-  }
-  else if (sine_angle_z<-1) {
-    sine_angle_z = -1;
-  }
-
- angle_z_degrees = asin(sine_angle_z) * RAD_TO_DEG;
- Serial.print( "angle_z_degrees = ");
- Serial.println(angle_z_degrees);
-
- delay(100);
+  Serial.println();
+ 
+  delay(200); 
 
  File dataFile = SD.open("AccelerationData.txt",FILE_WRITE);
  if (dataFile) {
