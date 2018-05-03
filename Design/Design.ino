@@ -10,6 +10,7 @@
 #include <Wire.h>
 #include <Adafruit_LIS3DH.h>
 #include <Adafruit_Sensor.h>
+
 #include <SD.h>
 
 const int chipSelect = 10;
@@ -22,10 +23,6 @@ float pressure;
 #define LIS3DH_CLK 13
 #define LIS3DH_MISO 12
 #define LIS3DH_MOSI 11
-#define LIS3DH_CS 10
-
-#define ACC (0xA7>>1)
-#define A_TO_READ (6)
 Adafruit_LIS3DH lis = Adafruit_LIS3DH();
 #if defined(ARDUINO_ARCH_SAMD)
 
@@ -36,7 +33,7 @@ void setup()
 {
   Serial.begin(9600);
   Wire.begin();
-  initAcc();// put your setup code here, to run once:
+  
 
   Serial.print("Initializing SD card");
   if (!SD.begin(chipSelect)) {
@@ -88,20 +85,6 @@ void getpressure()
 
 }
 
-void initAcc() {
-  writeTo(ACC, 0x2D,1<<3);
-  writeTo(ACC, 0x31,0x0B);
-  writeTo(ACC, 0x2C,0x09);
-
-}
-void getAccelerometerData(int* result) {
-  int regAddress = 0x32;
-  byte buff[A_TO_READ];
-  readFrom(ACC,regAddress,A_TO_READ, buff);
-  result[0] = (((int)buff[1]) << 8) | buff[0];
-  result[1] = (((int)buff[3] )<< 8) | buff[2];
-  result[2] = (((int)buff[5]) << 8) | buff[4];
-}
 
 void writeTo(int DEVICE, byte address, byte val){
   Wire.beginTransmission(DEVICE);
@@ -125,7 +108,7 @@ void readFrom(int DEVICE, byte address, int num, byte buff[]) {
 }
 
 
-}
+
 void getacceleration()
 {
  lis.read();      // get X Y and Z data at once
